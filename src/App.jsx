@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const heroImage = '/assets/guzal-hero.png';
+const heroImage = '/assets/guzal-hero-cutout.png';
+const storyPoster = '/assets/guzal-hero-v2.png';
 const storyVideo = '/assets/guzal-story.mp4';
 const telegramPhone = '+998972322030';
 
@@ -12,7 +13,7 @@ const services = [
     ru: 'Лифтинг век',
     description: 'Nigohni ochib, yuz ifodasini yengil va tabiiy ko‘rsatadigan individual parvarish.',
     ruDescription: 'Индивидуальный уход, который открывает взгляд и сохраняет естественность мимики.',
-    image: '/assets/beauty-tools.webp',
+    image: '/assets/service-qovoq.png',
     accent: 'rose',
   },
   {
@@ -22,7 +23,7 @@ const services = [
     ru: 'Чистка лица',
     description: 'Teri turiga mos yumshoq tozalash, yangilash va sog‘lom yorqinlikni qaytarish.',
     ruDescription: 'Мягкое очищение и обновление кожи с учётом её особенностей.',
-    image: '/assets/serum.webp',
+    image: '/assets/service-chistka.png',
     accent: 'sage',
   },
   {
@@ -32,7 +33,7 @@ const services = [
     ru: 'Ботокс',
     description: 'Mimikani asrab, mayda chiziqlarni yumshatishga yo‘naltirilgan ehtiyotkor yondashuv.',
     ruDescription: 'Деликатный подход для смягчения мимических линий без потери естественности.',
-    image: '/assets/gel-sphere.webp',
+    image: '/assets/service-botoks.png',
     accent: 'gold',
   },
   {
@@ -42,7 +43,7 @@ const services = [
     ru: 'Увеличение губ',
     description: 'Proportsiyani saqlagan holda yumshoq kontur va tabiiy hajm uchun konsultatsiya.',
     ruDescription: 'Консультация для мягкого контура и естественного объёма с сохранением пропорций.',
-    image: '/assets/liquid-blush.webp',
+    image: '/assets/service-lab.png',
     accent: 'plum',
   },
 ];
@@ -55,7 +56,7 @@ const navItems = {
 const copy = {
   uz: {
     eyebrow: 'Kosmetologiya studiyasi · Ташкент',
-    heroTitle: <>Tabiiy <em>go‘zallik</em><br />sizdan boshlanadi.</>,
+    heroTitle: <><span>Tabiiy</span><em>go‘zallik</em><span>sizdan boshlanadi.</span></>,
     heroDescription: 'Yuzingizdagi o‘ziga xoslikni saqlagan holda, professional parvarish va nozik estetikaga asoslangan xizmatlar.',
     bookingCta: 'Konsultatsiyaga yozilish',
     servicesLink: 'Xizmatlarni ko‘rish',
@@ -83,7 +84,7 @@ const copy = {
   },
   ru: {
     eyebrow: 'Косметологическая студия · Ташкент',
-    heroTitle: <>Естественная <em>красота</em><br />начинается с вас.</>,
+    heroTitle: <><span>Естественная</span><em>красота</em><span>начинается с вас.</span></>,
     heroDescription: 'Профессиональный уход и деликатная эстетика, которые подчёркивают вашу индивидуальность.',
     bookingCta: 'Записаться на консультацию',
     servicesLink: 'Смотреть услуги',
@@ -153,20 +154,52 @@ function Reveal({ children, className = '', delay = 0 }) {
 
 function ServiceCard({ service, index, language }) {
   const cardRef = useRef(null);
+  const frameRef = useRef(0);
+  const tiltRef = useRef({ currentX: 0, currentY: 0, targetX: 0, targetY: 0 });
+
+  useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
+
+  const animateTilt = () => {
+    const card = cardRef.current;
+    const tilt = tiltRef.current;
+    if (!card) return;
+
+    tilt.currentX += (tilt.targetX - tilt.currentX) * 0.16;
+    tilt.currentY += (tilt.targetY - tilt.currentY) * 0.16;
+    card.style.setProperty('--rotate-x', `${tilt.currentX.toFixed(3)}deg`);
+    card.style.setProperty('--rotate-y', `${tilt.currentY.toFixed(3)}deg`);
+
+    const isSettled = Math.abs(tilt.targetX - tilt.currentX) < 0.01 && Math.abs(tilt.targetY - tilt.currentY) < 0.01;
+    if (isSettled) {
+      tilt.currentX = tilt.targetX;
+      tilt.currentY = tilt.targetY;
+      card.style.setProperty('--rotate-x', `${tilt.currentX}deg`);
+      card.style.setProperty('--rotate-y', `${tilt.currentY}deg`);
+      frameRef.current = 0;
+      return;
+    }
+
+    frameRef.current = requestAnimationFrame(animateTilt);
+  };
+
+  const requestTiltFrame = () => {
+    if (!frameRef.current) frameRef.current = requestAnimationFrame(animateTilt);
+  };
+
   const handleMove = (event) => {
     const card = cardRef.current;
     if (!card || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const rect = card.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
     const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    card.style.setProperty('--rotate-x', `${y * -3}deg`);
-    card.style.setProperty('--rotate-y', `${x * 4}deg`);
+    tiltRef.current.targetX = y * -3;
+    tiltRef.current.targetY = x * 4;
+    requestTiltFrame();
   };
   const handleLeave = () => {
-    if (cardRef.current) {
-      cardRef.current.style.setProperty('--rotate-x', '0deg');
-      cardRef.current.style.setProperty('--rotate-y', '0deg');
-    }
+    tiltRef.current.targetX = 0;
+    tiltRef.current.targetY = 0;
+    requestTiltFrame();
   };
 
   return (
@@ -264,26 +297,19 @@ function App() {
               <a className="text-link" href="#services">{t.servicesLink} <Icon name="arrow" size={17} /></a>
             </Reveal>
             <Reveal delay={300} className="hero-proof">
-              <span className="proof-avatars" aria-hidden="true"><span>G</span><span>G</span><span>G</span></span>
-              <span><strong>5.0</strong> · {t.proof}</span>
+              <span className="hero-proof-score">5.0</span>
+              <span className="hero-proof-rule" aria-hidden="true" />
+              <span>{t.proof}</span>
             </Reveal>
           </div>
 
           <div className="hero-visual" aria-label="GUZAL kosmetologiya portreti">
             <div className="hero-glow" aria-hidden="true" />
-            <div className="hero-object-card" aria-hidden="true"><img src="/assets/gel-sphere.webp" alt="" /></div>
             <div className="hero-image-frame">
               <img src={heroImage} alt="GUZAL kosmetologiya studiyasi uchun portret" width="768" height="1344" fetchPriority="high" />
               <div className="image-shine" aria-hidden="true" />
             </div>
-            <div className="hero-video-card">
-              <video src={storyVideo} autoPlay muted loop playsInline preload="metadata" poster={heroImage} aria-label="Kosmetolog ish jarayoni" />
-              <div className="hero-video-label"><span><i /> real process</span><strong>00:45</strong></div>
-            </div>
-            <div className="hero-index" aria-hidden="true"><span>01</span><span>GUZAL EXPERIENCE</span></div>
           </div>
-
-          <div className="hero-scroll"><span>scroll to explore</span><span className="scroll-line" /></div>
         </section>
 
         <section className="marquee-band" aria-label="GUZAL xizmatlari">
@@ -321,7 +347,7 @@ function App() {
 
         <section className="story-section" id="story">
           <div className="story-media">
-            <video src={storyVideo} autoPlay muted loop playsInline preload="metadata" poster={heroImage} aria-label="GUZAL kosmetologi ish jarayoni videosi" />
+              <video src={storyVideo} autoPlay muted loop playsInline preload="metadata" poster={storyPoster} aria-label="GUZAL kosmetologi ish jarayoni videosi" />
             <div className="story-overlay" />
             <div className="story-play"><Icon name="play" size={18} /><span>real process / 00:45</span></div>
             <span className="story-caption">beauty, without<br /><em>overdoing it.</em></span>

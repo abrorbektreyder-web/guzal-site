@@ -12,7 +12,7 @@ if not exist "node_modules" (
   )
 )
 
-start "GUZAL local server" cmd /k "cd /d "%~dp0" && npm run dev -- --host 127.0.0.1"
+start "GUZAL local server" cmd /k "cd /d "%~dp0" && npm run dev -- --host 0.0.0.0"
 timeout /t 3 /nobreak >nul
 start "" "http://127.0.0.1:5173/"
 
